@@ -24,7 +24,8 @@
   "bugs": {
     "url": "https://github.com/Q42/tslint-react-native-a11y/issues"
   },
-  "homepage": "https://github.com/Q42/tslint-react-native-a11y#readme",
+	"files": ["/rules"],
+	"homepage": "https://github.com/Q42/tslint-react-native-a11y#readme",
   "devDependencies": {
     "@types/node": "^12.7.1",
     "tslint": "^5.18.0",
