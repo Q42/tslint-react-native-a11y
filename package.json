@@ -1,10 +1,11 @@
 {
   "name": "@q42/tslint-react-native-a11y",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "TSLint rules to enhance accessibility in React Native apps.",
-  "scripts": {
+	"private": false,
+	"scripts": {
     "build": "tsc",
-    "prepublish": "yarn build",
+    "prepare": "yarn build",
     "test": "yarn test"
   },
   "repository": {
@@ -19,12 +20,16 @@
     "react",
     "native"
   ],
+	"main": "./index.js",
   "author": "Jimmy (jimmy@q42.nl)",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/Q42/tslint-react-native-a11y/issues"
   },
-	"files": ["/rules"],
+	"files": [
+		"./rules",
+		"index.js"
+	],
 	"homepage": "https://github.com/Q42/tslint-react-native-a11y#readme",
   "devDependencies": {
     "@types/node": "^12.7.1",

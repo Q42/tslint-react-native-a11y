@@ -1,6 +1,0 @@
-{
-  "rulesDirectory": "./rules",
-  "rules": {
-    "jsx-a11y-touchable": true
-  }
-}
