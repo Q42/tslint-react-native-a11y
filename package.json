@@ -1,5 +1,5 @@
 {
-  "name": "tslint-react-native-a11y",
+  "name": "@q42/tslint-react-native-a11y",
   "version": "0.0.1",
   "description": "TSLint rules to enhance accessibility in React Native apps.",
   "scripts": {
@@ -20,7 +20,7 @@
     "native"
   ],
   "author": "Jimmy (jimmy@q42.nl)",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/Q42/tslint-react-native-a11y/issues"
   },
