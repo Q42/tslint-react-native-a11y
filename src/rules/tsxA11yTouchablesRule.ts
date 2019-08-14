@@ -29,24 +29,25 @@ import {
 	isIdentifier,
 	isJsxAttribute,
 	isJsxElement,
+	isJsxExpression,
 	isJsxSelfClosingElement,
-	isJsxSpreadAttribute,
-	isObjectLiteralExpression,
 } from 'tsutils/typeguard/3.0';
 
 export class Rule extends Lint.Rules.AbstractRule {
 	public static metadata: Lint.IRuleMetadata = {
-		ruleName: 'accessible-touchable',
-		description: Lint.Utils.dedent`Warn if a touchable component misses an accessibility property.`,
+		ruleName: 'tsx-a11y-touchables',
+		description: Lint.Utils.dedent`Warn if a touchable component misses accessible properties.`,
 		options: null,
-		optionsDescription: '',
-		optionExamples: ['true'],
+		optionsDescription: 'Not configurable.',
 		type: 'functionality',
 		typescriptOnly: false,
 	};
 
-	public static FAILURE_STRING =
-		'Touchable component misses an accessible / accessibilityLabel attribute.';
+	public static FAILURE_STRING_ACCESSIBLE = 'Touchable component misses accessible property.';
+	public static FAILURE_STRING_ACCESSIBILITYLABEL =
+		'Touchable and accessible component misses accessibilityLabel property.';
+	public static FAILURE_STRING_ACCESSIBILITYROLE =
+		'Touchable and accessible component misses accessibilityRole property.';
 
 	public apply(sourceFile: ts.SourceFile): Lint.RuleFailure[] {
 		return this.applyWithFunction(sourceFile, walk);
@@ -55,55 +56,66 @@ export class Rule extends Lint.Rules.AbstractRule {
 
 function walk(ctx: Lint.WalkContext<void>): void {
 	return ts.forEachChild(ctx.sourceFile, function cb(node: ts.Node): void {
-		if (isJsxElement(node) || isJsxSelfClosingElement(node)) {
-			checkElement(node, ctx);
+		if (isJsxElement(node) && isTouchableComponent(node.openingElement.tagName)) {
+			assertAccessibilityProperties(ctx, node, node.openingElement.attributes);
 		}
+
+		if (isJsxSelfClosingElement(node) && isTouchableComponent(node.tagName)) {
+			assertAccessibilityProperties(ctx, node, node.attributes);
+		}
+
 		return ts.forEachChild(node, cb);
 	});
 }
 
-function checkElement(node: ts.Node, ctx: Lint.WalkContext<void>) {
-	if (
-		isJsxElement(node) &&
-		isTouchableComponent(node.openingElement.tagName) &&
-		!hasAccessibilityAttributes(node.openingElement.attributes) &&
-		!hasAccessibilityAttributesSpread(node.openingElement.attributes)
-	) {
-		ctx.addFailureAtNode(node, Rule.FAILURE_STRING);
-	}
-
-	if (
-		isJsxSelfClosingElement(node) &&
-		isTouchableComponent(node.tagName) &&
-		!hasAccessibilityAttributes(node.attributes) &&
-		!hasAccessibilityAttributesSpread(node.attributes)
-	) {
-		ctx.addFailureAtNode(node, Rule.FAILURE_STRING);
-	}
-}
-
 function isTouchableComponent(tagName: ts.JsxTagNameExpression) {
-	return isIdentifier(tagName) && tagName.escapedText.toString().startsWith('Touchable');
-}
-
-function hasAccessibilityAttributes(attributes: ts.JsxAttributes) {
 	return (
-		attributes.properties
-			.map(prop => isJsxAttribute(prop) && prop.name.text === 'accessibilityLabel')
-			.indexOf(true) !== -1
+		isIdentifier(tagName) &&
+		tagName.escapedText
+			.toString()
+			.toLowerCase()
+			.startsWith('touchable')
 	);
 }
 
-function hasAccessibilityAttributesSpread(attributes: ts.JsxAttributes) {
-	return attributes.properties.some(
-		prop =>
-			isJsxSpreadAttribute(prop) &&
-			isObjectLiteralExpression(prop.expression) &&
-			prop.expression.properties.some(
-				expProp =>
-					expProp.name !== undefined &&
-					isIdentifier(expProp.name) &&
-					expProp.name.text === 'accessibilityLabel'
-			)
-	);
+const propsToCheck = ['accessible', 'accessibilityLabel', 'accessibilityRole'];
+
+function assertAccessibilityProperties(
+	ctx: Lint.WalkContext<void>,
+	node: ts.Node,
+	attributes: ts.JsxAttributes
+) {
+	const props: ts.JsxAttribute[] = attributes.properties.filter(
+		prop => isJsxAttribute(prop) && propsToCheck.some(s => s === prop.name.text)
+	) as ts.JsxAttribute[];
+
+	/**
+	 * Assert accessible property
+	 */
+	const accessibleAttribute = props.find(prop => prop.name.text === 'accessible');
+	if (
+		!accessibleAttribute ||
+		!accessibleAttribute.initializer ||
+		!isJsxExpression(accessibleAttribute.initializer)
+	) {
+		return ctx.addFailureAtNode(node, Rule.FAILURE_STRING_ACCESSIBLE);
+	}
+	const { expression } = accessibleAttribute.initializer;
+	const isValueFalse = expression !== undefined && expression.kind === ts.SyntaxKind.FalseKeyword;
+
+	if (isValueFalse) {
+		return;
+	}
+	/**
+	 * Assert accessibilityLabel property
+	 */
+	if (!props.some(prop => prop.name.text === 'accessibilityLabel')) {
+		ctx.addFailureAtNode(node, Rule.FAILURE_STRING_ACCESSIBILITYLABEL);
+	}
+	/**
+	 * Assert accessibilityLabel property
+	 */
+	if (!props.some(prop => prop.name.text === 'accessibilityRole')) {
+		ctx.addFailureAtNode(node, Rule.FAILURE_STRING_ACCESSIBILITYROLE);
+	}
 }
